@@ -159,7 +159,6 @@ class NetStringReader:
 
         * Returns the amount of bytes consumed from the given buffer
         """
-#        print("-->", self.__buffer.__repr__())
         if self.state == STATE.READ_FIRST_DIGIT:
             return self.__read_first_digit(data)
         elif self.state == STATE.READ_LENGTH_DIGIT:

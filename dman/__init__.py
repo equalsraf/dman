@@ -1,6 +1,18 @@
+# coding: utf-8
+"""
+dman is a Meta-download manager
 
+* for client functions check the *client* module
+* the *server* module holds the server bits
+* for netstring encoding/decoding check the *netstring* module
+* the *plugins* modules holds all download implementations,
+  if you are thinking about implementing support for other
+  applications, you should start there
+
+"""
+from __future__ import print_function, unicode_literals
+from __future__ import absolute_import, division
 from .plugins import new_download
-
 
 class DMan(object):
     """
@@ -22,7 +34,6 @@ class DMan(object):
                 self.downloading.remove(down)
                 self.finished.append(down)
 
-        # FIXME: Wget is hardcoded for now
         self.pending.append( new_download(url) )
 
         # Move pending downloads in
@@ -33,5 +44,4 @@ class DMan(object):
                 down = self.pending.pop()
                 self.downloading.append(down)
                 down.start()
-
 

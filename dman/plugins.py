@@ -1,7 +1,13 @@
+# coding: utf-8
 "Download modules for dman"
 
+from __future__ import print_function, unicode_literals
+from __future__ import absolute_import, division
 import subprocess
 from abc import abstractmethod
+import os
+
+DEBUG = os.getenv("DMAN_DEBUG", False)
 
 class Download(object):
     "The base download class"
@@ -41,6 +47,29 @@ class Download(object):
         
         You should check succeeded() before calling this"""
         pass
+
+class DebugDownload(Download):
+    """A Debug download class
+
+    No downloads will be started, this just prints some output
+    Downloads provided by this class will always finished
+    """
+    def __init__(self, url):
+        super(DebugDownload, self).__init__(url)
+        self.__started = False
+    def start(self):
+        self.__started = True
+        print("Starting download ", self.url)
+    def stop(self):
+        pass
+    def started(self):
+        return self.__started
+    def finished(self):
+        return self.__started
+    def succeeded(self):
+        return self.__started
+    def error(self):
+        return 'Debug mode is enabled'
 
 class ProcessDownload(Download):
     """
@@ -121,5 +150,9 @@ class WGetDownload(ProcessDownload):
 
 def new_download(url):
     "Returns a new Download object"
+    if DEBUG:
+        return DebugDownload(url)
+
+    # FIXME: Wget is hardcoded for now
     return WGetDownload(url)
 

@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 dman - local server classes
 """
@@ -7,6 +8,7 @@ import os, signal
 from .netstring import NetStringReader
 from twisted.internet import reactor, protocol
 from . import DMan
+import sys
 
 # Server
 def runtime_base_base():
@@ -57,7 +59,38 @@ class UrlDropFactory(protocol.Factory):
     def buildProtocol(self, addr):
         return UrlDropHandler(self.dman)
 
-def server_main(urls=[]):
+def start_daemon():
+    """Launch the dman daemon
+
+    If the dman daemon is not running, launch it and return True
+    If the daemon is already running return False
+
+    """
+    if not os.path.exists(urldrop_path()):
+        # start dman
+        pid = os.fork()
+        if pid == 0:
+            # child process
+            os.setsid()
+            sys.stdout = open("/dev/null", 'w')
+            sys.stdin = open("/dev/null", 'r')
+    
+            try: 
+                pid = os.fork() 
+                if pid > 0:
+                    # exit from second parent, print eventual PID before
+                    sys.exit(0) 
+            except OSError, e: 
+                print("fork failed: ", e)
+                sys.exit(1)
+            main()
+    else:
+        return False
+    return True
+
+
+
+def main():
     """main() function to execute the server
     
     Params:
@@ -68,9 +101,8 @@ def server_main(urls=[]):
         print("The server is already running")
         return
 
+    print("Starting dman")
     dman = DMan()
-    for url in urls:
-        dman.download(url)
     signal.signal(signal.SIGTERM, shutdownDaemon)
     signal.signal(signal.SIGINT, shutdownDaemon)
     reactor.listenUNIX( urldrop_path(), UrlDropFactory(dman) )
@@ -82,7 +114,4 @@ def server_main(urls=[]):
         os.unlink(urldrop_path())
     except OSError:
         pass
-
-
-
 

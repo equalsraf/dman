@@ -7,43 +7,27 @@
 
 """
 
+from __future__ import print_function, unicode_literals
+from __future__ import absolute_import, division
 from dman import server
 from dman import client
-import sys, os
+import os
+import sys
 
 
 def main():
-    """The main() function
-    
-    In a nutshell:
-    1. If the urldropper socket exists run the client
-    2. If it does not run the server
-    3. In both cases all arguments are treated as URLs to download
-    """
-
-    if not os.path.exists(server.urldrop_path()):
-        # start dman
-        print("dman is not running, starting daemon")
-        urls = sys.argv[1:]
-        pid = os.fork()
-        if pid == 0:
-            # child process
-            os.setsid()
-            sys.stdout = open("/dev/null", 'w')
-            sys.stdin = open("/dev/null", 'r')
-    
-            try: 
-                pid = os.fork() 
-                if pid > 0:
-                    # exit from second parent, print eventual PID before
-                    print "Daemon PID %d" % pid 
-                    sys.exit(0) 
-            except OSError, e: 
-                print("fork failed: ", e)
-                sys.exit(1)
-            server.server_main(urls)
-    elif len(sys.argv) > 1:
-        client.simple_client_main()
+    "The main() function"
+    if os.getenv("DMAN_DEBUG"):
+        if len(sys.argv) > 1:
+            client.main()
+        else:
+            server.main()
+    else:
+        if server.start_daemon():
+            # sleep a bit so the daemon can start
+            import time
+            time.sleep(2)
+        client.main()
 
 if __name__ == '__main__':
     main()
