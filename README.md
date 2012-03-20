@@ -38,7 +38,14 @@ Just call the dman command:
 At this point only Wget is supported
 
 
-# dman IPC
+# Development
+
+## Adding support new download apps
+
+Take a peek into dman/plugins.py. For simple programs you
+inherit from the ProcessDownload class.
+
+## dman IPC
 
 dman has 2 IPC mechanisms you can use to interact with the
 download manager: json-rpc and the urldropper socket.
@@ -46,7 +53,7 @@ download manager: json-rpc and the urldropper socket.
 Both operate as a UNIX socket, and accept messages as netstring
 frames.
 
-## urldropper
+### urldropper
 
 The urldropper interface is the simplest interface to start a download.
 It simply accepts URLs for download.
@@ -66,8 +73,6 @@ So, a simple python example could be:
     sock.close()
 
 
-
-## Json RPC
+### Json RPC
 
 TBD ...
-
