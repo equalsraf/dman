@@ -11,11 +11,20 @@ from . import DMan
 import sys
 
 # Server
-def runtime_base_base():
+def runtime_base_path():
     """Returns the path to the IPC socket
-    if the path does not exist it is created"""
-    base = os.environ['XDG_RUNTIME_DIR']
-    folder = os.path.join(base, 'dman')
+    if the path does not exist it is created
+
+    If the XDG_RUNTIME_DIR is not available
+    then $HOME/.dman/ is used"""
+
+    base = os.getenv('XDG_RUNTIME_DIR')
+    if base:
+        folder = os.path.join(base, 'dman')
+    else:
+        base = os.path.expanduser("~")
+        folder = os.path.join(base, '.dman')
+
     try:
         os.mkdir(folder)
     except OSError:
@@ -24,11 +33,11 @@ def runtime_base_base():
 
 def ipc_path():
     "The path to the ipc socket"
-    return os.path.join(runtime_base_base(), 'ipc')
+    return os.path.join(runtime_base_path(), 'ipc')
 
 def urldrop_path():
     "The path to the urldrop socket"
-    return os.path.join(runtime_base_base(), 'urldrop')
+    return os.path.join(runtime_base_path(), 'urldrop')
 
 def shutdownDaemon(sig, stack):
     "Stop the reactor"
