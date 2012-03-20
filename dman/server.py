@@ -74,7 +74,7 @@ def start_daemon():
             os.setsid()
             sys.stdout = open("/dev/null", 'w')
             sys.stdin = open("/dev/null", 'r')
-    
+
             try: 
                 pid = os.fork() 
                 if pid > 0:
@@ -83,7 +83,19 @@ def start_daemon():
             except OSError, e: 
                 print("fork failed: ", e)
                 sys.exit(1)
+
+            # redirect standard file descriptors
+            sys.stdout.flush()
+            sys.stderr.flush()
+            si = file('/dev/null', 'r')
+            so = file('/dev/null', 'a+')
+            se = file('/dev/null', 'a+', 0)
+            os.dup2(si.fileno(), sys.stdin.fileno())
+            os.dup2(so.fileno(), sys.stdout.fileno())
+            os.dup2(se.fileno(), sys.stderr.fileno())
+
             main()
+            sys.exit(0) # Make sure we exit 
     else:
         return False
     return True
