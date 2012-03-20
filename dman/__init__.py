@@ -13,6 +13,7 @@ dman is a Meta-download manager
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
 from .plugins import new_download
+import os
 
 class DMan(object):
     """
@@ -25,16 +26,24 @@ class DMan(object):
         self.finished = []
         self.maxdownloads = maxdownloads
 
-    def download(self, url):
+    @staticmethod
+    def default_download_folder():
+        "Returns a default download folder"
+        return os.path.join( os.path.expanduser("~"), 'Downloads' )
+
+    def download(self, url, save_in=None):
         "Download a URL"       
+
+        if not save_in:
+            save_in = DMan.default_download_folder()
+
+        self.pending.append( new_download(url, save_in) )
 
         # Moved finished downloads out
         for down in self.downloading:
             if down.finished():
                 self.downloading.remove(down)
                 self.finished.append(down)
-
-        self.pending.append( new_download(url) )
 
         # Move pending downloads in
         count = min( len(self.pending), 

@@ -11,8 +11,9 @@ DEBUG = os.getenv("DMAN_DEBUG", False)
 
 class Download(object):
     "The base download class"
-    def __init__(self, url):
+    def __init__(self, url, save_in):
         self.url = url
+        self.save_in = save_in
     @abstractmethod
     def start(self):
         "Start the download"
@@ -54,12 +55,12 @@ class DebugDownload(Download):
     No downloads will be started, this just prints some output
     Downloads provided by this class will always finished
     """
-    def __init__(self, url):
-        super(DebugDownload, self).__init__(url)
+    def __init__(self, url, save_in):
+        super(DebugDownload, self).__init__(url, save_in)
         self.__started = False
     def start(self):
         self.__started = True
-        print("Starting download ", self.url)
+        print("Starting download ", self.url, self.save_in)
     def stop(self):
         pass
     def started(self):
@@ -87,8 +88,8 @@ class ProcessDownload(Download):
 
     errors = { 0: 'No errors occurred'}
 
-    def __init__(self, url):
-        super(ProcessDownload, self).__init__(url)
+    def __init__(self, url, save_in):
+        super(ProcessDownload, self).__init__(url, save_in)
         self.__started = False
         self.process = None
 
@@ -145,14 +146,14 @@ class WGetDownload(ProcessDownload):
 
     def download_cmd(self):
         "Downloads are just: wget URL"
-        return ['wget', self.url]
+        cmd = ['wget', '-P', self.save_in, self.url]
+        return cmd
 
-
-def new_download(url):
+def new_download(url, save_in):
     "Returns a new Download object"
     if DEBUG:
         return DebugDownload(url)
 
     # FIXME: Wget is hardcoded for now
-    return WGetDownload(url)
+    return WGetDownload(url, save_in)
 
