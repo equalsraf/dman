@@ -29,7 +29,13 @@ class DMan(object):
     @staticmethod
     def default_download_folder():
         "Returns a default download folder"
-        return os.path.join( os.path.expanduser("~"), 'Downloads' )
+        path = os.path.join( os.path.expanduser("~"), 'Downloads' )
+
+        try:
+            os.mkdir(path)
+        except OSError:
+            pass
+        return path
 
     def download(self, url, save_in=None):
         "Download a URL"       
