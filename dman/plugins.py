@@ -215,7 +215,5 @@ def new_download(url, save_in):
 
     if not AVAILABLE:
         return None
-
-    # FIXME: Wget is hardcoded for now
     return AVAILABLE[0](url, save_in)
 
