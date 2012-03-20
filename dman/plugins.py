@@ -1,5 +1,10 @@
 # coding: utf-8
-"Download modules for dman"
+"""Download modules for dman
+
+The plugins module holds the download
+plugins for dman. Plugins allow dman to
+delegate download tasks to other applications
+"""
 
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
@@ -8,6 +13,18 @@ from abc import abstractmethod
 import os
 
 DEBUG = os.getenv("DMAN_DEBUG", False)
+
+def which(program):
+    "The equivalent to UNIX's which"
+
+    for path in os.environ["PATH"].split(os.pathsep):
+        exe_file = os.path.join(path, program)
+
+        if os.path.exists(exe_file) and os.access(exe_file, os.X_OK):
+            return exe_file
+
+    return None
+
 
 class Download(object):
     "The base download class"
@@ -48,6 +65,13 @@ class Download(object):
         
         You should check succeeded() before calling this"""
         pass
+    @staticmethod
+    @abstractmethod
+    def plugin_available():
+        """Return True if this download plugin class can
+        be used
+        """
+        return False
 
 class DebugDownload(Download):
     """A Debug download class
@@ -128,8 +152,7 @@ class ProcessDownload(Download):
         return self.errors.get(self.process.returncode, 'Unknown error')
 
 class WGetDownload(ProcessDownload):
-    """A download using the popular WGet
-    """
+    """A download using the popular WGet"""
     # wget return codes
     errors = {
         0: 'No problems occured',
@@ -143,17 +166,56 @@ class WGetDownload(ProcessDownload):
         8: 'Server issued and error'
         }
 
+    wget = which('wget')
+
+    @staticmethod
+    def plugin_available():
+        if WGetDownload.wget:
+            return True
+        else:
+            return False
 
     def download_cmd(self):
         "Downloads are just: wget URL"
-        cmd = ['wget', '-P', self.save_in, self.url]
+        cmd = [self.wget, '-P', self.save_in, self.url]
         return cmd
+
+class AriaDownload(ProcessDownload):
+    """Download using aria2c"""
+    errors = {
+        0: 'No problems occured',
+        1: 'Unknown error',
+        2: 'Timed out',
+        6: 'Network error',
+        9: 'Not enough disk space',
+        17: 'I/O error',
+        }
+
+    aria2c = which('aria2c')
+
+    @staticmethod
+    def plugin_available():
+        if AriaDownload.aria2c:
+            return True
+        else:
+            return False
+
+    def download_cmd(self):
+        "aria2c -d <save_in> <url>"
+        cmd = [self.aria2c, '-d', self.save_in, self.url]
+        return cmd
+
+PLUGINS = [ AriaDownload, WGetDownload ]
+AVAILABLE = [ p for p in PLUGINS if p.plugin_available() ]
 
 def new_download(url, save_in):
     "Returns a new Download object"
     if DEBUG:
-        return DebugDownload(url)
+        return DebugDownload(url, save_in)
+
+    if not AVAILABLE:
+        return None
 
     # FIXME: Wget is hardcoded for now
-    return WGetDownload(url, save_in)
+    return AVAILABLE[0](url, save_in)
 

@@ -35,10 +35,18 @@ Just call the dman command:
 
 ## What applications do you support?
 
-At this point only Wget is supported
+* WGet
+* Aria
 
 
 # Development
+
+We are still very early in the development cycle. We need:
+
+* Testing, testing, testing, ...
+* The more applications the merrier, if you need a plugin we
+  don't support let us know
+
 
 ## Adding support new download apps
 

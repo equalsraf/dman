@@ -43,20 +43,34 @@ class DMan(object):
         if not save_in:
             save_in = DMan.default_download_folder()
 
-        self.pending.append( new_download(url, save_in) )
+        #
+        # dman has three queues (pending, downloading, finished)
+        # - pending is a queue of tuples (url, save_folder)
+        # - downloading is a queue of Download objects
+        # - finished is a queue of download objects
+
+        # Add download to the pending queue
+        self.pending.append( (url, save_in) )
 
         # Moved finished downloads out
-        for down in self.downloading:
-            if down.finished():
-                self.downloading.remove(down)
-                self.finished.append(down)
+        for download in self.downloading:
+            if download.finished():
+                self.downloading.remove(download)
+                self.finished.append(download)
 
         # Move pending downloads in
         count = min( len(self.pending), 
                 self.maxdownloads - len(self.downloading))
         if count:
             for i in range(count):
-                down = self.pending.pop()
-                self.downloading.append(down)
-                down.start()
+                d_url,d_save_in = self.pending.pop()
+                download = new_download( d_url, d_save_in )
+                if not download:
+                    # Can't start the download - got back to pending
+                    self.pending.append( (d_url,d_save) )
+                    continue
+
+                self.downloading.append(download)
+                download.start()
+
 
