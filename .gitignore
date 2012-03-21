@@ -1,2 +1,4 @@
 *.pyc
 *.sw[po]
+dist/
+build/
