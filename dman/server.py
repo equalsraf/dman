@@ -90,8 +90,8 @@ def start_daemon():
                 if pid > 0:
                     # exit from second parent, print eventual PID before
                     sys.exit(0) 
-            except OSError, e: 
-                print("fork failed: ", e)
+            except OSError, ex: 
+                print("fork failed: ", ex)
                 sys.exit(1)
 
             # redirect standard file descriptors
@@ -181,7 +181,8 @@ def main():
         print("The server is already running")
         return
 
-    logging.basicConfig(filename=os.path.join(runtime_base_path(), 'dman.log') ,level=logging.DEBUG)
+    logging.basicConfig(filename=os.path.join(runtime_base_path(), 'dman.log'), 
+                        level=logging.DEBUG)
     logging.info("Starting dman")
     dman = DMan()
     signal.signal(signal.SIGTERM, shutdownDaemon)
