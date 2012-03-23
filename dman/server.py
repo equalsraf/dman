@@ -8,11 +8,12 @@ import os, signal
 from .netstring import NetStringReader
 from twisted.internet import reactor, protocol
 import sys
+import logging
 from .plugins import new_download
 
 # Server
 def runtime_base_path():
-    """Returns the path to the IPC socket
+    """Returns the base path to store runtime info
     if the path does not exist it is created
 
     If the XDG_RUNTIME_DIR is not available
@@ -137,6 +138,7 @@ class DMan(object):
         if not save_in:
             save_in = DMan.default_download_folder()
 
+        logging.info("Adding %s to the download queue in %s" % (url, save_in))
         #
         # dman has three queues (pending, downloading, finished)
         # - pending is a queue of tuples (url, save_folder)
@@ -179,14 +181,15 @@ def main():
         print("The server is already running")
         return
 
-    print("Starting dman")
+    logging.basicConfig(filename=os.path.join(runtime_base_path(), 'dman.log') ,level=logging.DEBUG)
+    logging.info("Starting dman")
     dman = DMan()
     signal.signal(signal.SIGTERM, shutdownDaemon)
     signal.signal(signal.SIGINT, shutdownDaemon)
     reactor.listenUNIX( urldrop_path(), UrlDropFactory(dman) )
 
     reactor.run()
-    print("Shutting down")
+    logging.info("Shutting down")
     try:
         os.unlink(ipc_path())
         os.unlink(urldrop_path())
