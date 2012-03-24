@@ -129,12 +129,13 @@ class ProcessDownload(Download, protocol.ProcessProtocol):
         return self.errors.get(self.__returncode, 'Unknown error')
     def processEnded(self, status):
         """Twisted ProcessProtocol exit handler"""
-        logging.debug('Download finished '+self.url)
+
         if isinstance(status.value, ProcessDone):
             self.__returncode = 0
         else:
             self.__returncode = status.value.exitCode
         self.__finished = True
+        logging.debug('Download finished '+ self.url + ' in '+ self.save_in + str(self.__returncode))
         self.dman.poke()
 
 class WGetDownload(ProcessDownload):
