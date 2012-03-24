@@ -10,6 +10,7 @@ from twisted.internet import reactor, protocol
 import sys
 import logging
 from .plugins import new_download
+import ConfigParser
 
 # Server
 def runtime_base_path():
@@ -120,9 +121,24 @@ class DMan(object):
         self.downloading = []
         self.finished = []
         self.maxdownloads = maxdownloads
+        self.save_in = DMan.default_download_path()
+
+        try:
+            config = ConfigParser.ConfigParser()
+            cfp = open(DMan.config_path())
+            config.readfp( cfp, 'dman.cfg')
+            self.save_in = os.path.expanduser(config.get('dman', 'save_in'))
+        except IOError:
+            logging.info('No config file was found in ' + DMan.config_path())
 
     @staticmethod
-    def default_download_folder():
+    def config_path():
+        "Path to the config file"
+        base = os.path.expanduser("~")
+        return os.path.join(base, '.dman', 'dman.cfg')
+
+    @staticmethod
+    def default_download_path():
         "Returns a default download folder"
         path = os.path.join( os.path.expanduser("~"), 'Downloads' )
 
@@ -132,13 +148,13 @@ class DMan(object):
             pass
         return path
 
-    def download(self, url, save_in=None):
+    def download(self, url, save_path=None):
         "Download a URL"       
 
-        if not save_in:
-            save_in = DMan.default_download_folder()
+        if not save_path:
+            save_path = self.save_in
 
-        logging.info("Adding %s to the download queue in %s" % (url, save_in))
+        logging.info("Adding %s to the download queue in %s" % (url, save_path))
         #
         # dman has three queues (pending, downloading, finished)
         # - pending is a queue of tuples (url, save_folder)
@@ -146,7 +162,7 @@ class DMan(object):
         # - finished is a queue of download objects
 
         # Add download to the pending queue
-        self.pending.append( (url, save_in) )
+        self.pending.append( (url, save_path) )
         self.poke()
 
     def poke(self):
