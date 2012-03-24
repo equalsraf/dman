@@ -147,7 +147,14 @@ class DMan(object):
 
         # Add download to the pending queue
         self.pending.append( (url, save_in) )
+        self.poke()
 
+    def poke(self):
+        """
+        Poke dman to "do something", this function moves
+        finished downloads into the finished queue and
+        starts pending downloads
+        """
         # Moved finished downloads out
         for download in self.downloading:
             if download.finished():
@@ -160,7 +167,7 @@ class DMan(object):
         if count:
             for i in range(count):
                 d_url, d_save_in = self.pending.pop()
-                download = new_download( d_url, d_save_in )
+                download = new_download( self, d_url, d_save_in )
                 if not download:
                     # Can't start the download - got back to pending
                     self.pending.append( (d_url, d_save_in) )

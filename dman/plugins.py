@@ -8,9 +8,10 @@ delegate download tasks to other applications
 
 from __future__ import print_function, unicode_literals
 from __future__ import absolute_import, division
-import subprocess
 from abc import abstractmethod
-import os
+import os, logging
+from twisted.internet import reactor, protocol
+from twisted.internet.error import ProcessDone
 
 DEBUG = os.getenv("DMAN_DEBUG", False)
 
@@ -28,7 +29,8 @@ def which(program):
 
 class Download(object):
     "The base download class"
-    def __init__(self, url, save_in):
+    def __init__(self, dman, url, save_in):
+        self.dman = dman
         self.url = url
         self.save_in = save_in
     @abstractmethod
@@ -73,30 +75,8 @@ class Download(object):
         """
         return False
 
-class DebugDownload(Download):
-    """A Debug download class
 
-    No downloads will be started, this just prints some output
-    Downloads provided by this class will always finished
-    """
-    def __init__(self, url, save_in):
-        super(DebugDownload, self).__init__(url, save_in)
-        self.__started = False
-    def start(self):
-        self.__started = True
-        print("Starting download ", self.url, self.save_in)
-    def stop(self):
-        pass
-    def started(self):
-        return self.__started
-    def finished(self):
-        return self.__started
-    def succeeded(self):
-        return self.__started
-    def error(self):
-        return 'Debug mode is enabled'
-
-class ProcessDownload(Download):
+class ProcessDownload(Download, protocol.ProcessProtocol):
     """
     This classe provides a simple download provider
     that calls a command via a pipe to execute the download.
@@ -112,11 +92,12 @@ class ProcessDownload(Download):
 
     errors = { 0: 'No errors occurred'}
 
-    def __init__(self, url, save_in):
-        super(ProcessDownload, self).__init__(url, save_in)
+    def __init__(self, dman, url, save_in):
+        super(ProcessDownload, self).__init__( dman, url, save_in)
         self.__started = False
         self.process = None
-
+        self.__finished = False
+        self.__returncode = -1
     @abstractmethod
     def download_cmd(self):
         """Override this to define a download command
@@ -126,30 +107,35 @@ class ProcessDownload(Download):
             ['wget', self.url]
         """
         pass
-
     def start(self):
         if self.__started:
             return False
 
-        self.process = subprocess.Popen(self.download_cmd())
+        cmd = self.download_cmd()
+        logging.debug( 'starting download: ' + ' '.join(cmd) )
+        self.process = reactor.spawnProcess( self, cmd[0], cmd)
         self.__started = True
         return True
     def stop(self):
         if self.__started:
-            self.process.terminate()
+            self.process.signalProcess('INT')
     def started(self):
         return self.__started
-
     def finished(self):
-        if self.__started and self.process.poll() != None:
-            return True
-        else:
-            return False
+        return self.__finished
     def succeeded(self):
-        return self.process.returncode == 0
-
+        return self.__returncode == 0
     def error(self):
-        return self.errors.get(self.process.returncode, 'Unknown error')
+        return self.errors.get(self.__returncode, 'Unknown error')
+    def processEnded(self, status):
+        """Twisted ProcessProtocol exit handler"""
+        logging.debug('Download finished '+self.url)
+        if isinstance(status.value, ProcessDone):
+            self.__returncode = 0
+        else:
+            self.__returncode = status.value.exitCode
+        self.__finished = True
+        self.dman.poke()
 
 class WGetDownload(ProcessDownload):
     """A download using the popular WGet"""
@@ -174,7 +160,6 @@ class WGetDownload(ProcessDownload):
             return True
         else:
             return False
-
     def download_cmd(self):
         "Downloads are just: wget URL"
         cmd = [self.wget, '-P', self.save_in, self.url]
@@ -208,12 +193,10 @@ class AriaDownload(ProcessDownload):
 PLUGINS = [ AriaDownload, WGetDownload ]
 AVAILABLE = [ p for p in PLUGINS if p.plugin_available() ]
 
-def new_download(url, save_in):
+def new_download(dman, url, save_in):
     "Returns a new Download object"
-    if DEBUG:
-        return DebugDownload(url, save_in)
 
     if not AVAILABLE:
         return None
-    return AVAILABLE[0](url, save_in)
+    return AVAILABLE[0](dman, url, save_in)
 
