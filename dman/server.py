@@ -18,14 +18,13 @@ def runtime_base_path():
     if the path does not exist it is created
 
     If the XDG_RUNTIME_DIR is not available
-    then $HOME/.dman/ is used"""
+    then /tmp/dman-<UID>/ is used"""
 
     base = os.getenv('XDG_RUNTIME_DIR')
     if base:
         folder = os.path.join(base, 'dman')
     else:
-        base = os.path.expanduser("~")
-        folder = os.path.join(base, '.dman')
+        folder = "/tmp/dman-%s/" % os.getuid()
 
     try:
         os.mkdir(folder)
